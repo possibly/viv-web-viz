@@ -1,12 +1,21 @@
-// Demo content for viv-web-viz. Exercises six subsystems so every tab of the
-// explorer has something interesting to show:
+// Demo content for viv-web-viz. Exercises every subsystem so each tab of the
+// explorer has something interesting to show — including *dynamic* planning
+// and *symmetric* causal weight for nice and mean free-picks:
 //
-//   - Actions (selectable): hello, provoke, celebrate, argue.
-//   - Reactions: `provoke` queues `retaliate`.
-//   - Plans: `befriend` (two phases queueing hellos).
-//   - Associations: celebrate→happy, argue→sad — feed the queries below.
-//   - Queries: happy-memory, sad-memory — used inside sifting patterns.
-//   - Sifting patterns: good-day, bad-day — find emergent storylines.
+//   - Actions (selectable): hello, celebrate, argue, provoke.
+//   - Reactions:
+//       provoke   → queue retaliate on target
+//       retaliate → queue plan scheme-revenge (mean 3-phase arc)
+//       celebrate → queue plan deepen-bond   (nice 2-phase arc)
+//   - Plans:
+//       befriend        — queued at init, greedy single-tick completion.
+//       scheme-revenge  — 3 phases with waits; brood → plot → sabotage.
+//       deepen-bond     — 2 phases with waits; reflect → compliment.
+//   - Associations: celebrate, compliment → happy. argue → sad.
+//   - Queries/patterns: happy-memory, sad-memory, good-day, bad-day.
+//
+// Tick unit is 1 week in story time, so plan waits are written in weeks and
+// memory decay (≈5 ticks) lands on a legible scrub-scale.
 
 action hello:
     gloss: "@greeter says hello to @friend"
@@ -34,6 +43,13 @@ action celebrate:
     effects:
         @celebrant.mood += 8
         @guest.mood += 8
+    // Causal amplifier on the nice side: a celebration seeds a longer arc
+    // where the celebrant reflects on their bond, then compliments the guest.
+    reactions:
+        queue plan deepen-bond:
+            with:
+                @self: @celebrant
+                @other: @guest
 
 
 action argue:
@@ -78,6 +94,65 @@ reserved action retaliate:
             as: recipient
     effects:
         @victim.mood -= 10
+    reactions:
+        queue plan scheme-revenge:
+            with:
+                @schemer: @aggressor
+                @target: @victim
+
+
+reserved action brood:
+    gloss: "@brooder broods about @about"
+    roles:
+        @brooder:
+            as: initiator
+        @about:
+            as: partner
+
+
+reserved action plot:
+    gloss: "@plotter plots against @victim"
+    roles:
+        @plotter:
+            as: initiator
+        @victim:
+            as: partner
+
+
+reserved action sabotage:
+    gloss: "@saboteur sabotages @target"
+    roles:
+        @saboteur:
+            as: initiator
+        @target:
+            as: recipient
+    effects:
+        @target.mood -= 20
+
+
+reserved action reflect:
+    gloss: "@reflector warmly reflects on @about"
+    roles:
+        @reflector:
+            as: initiator
+        @about:
+            as: partner
+
+
+reserved action compliment:
+    gloss: "@complimenter compliments @recipient"
+    roles:
+        @complimenter:
+            as: initiator
+        @recipient:
+            as: recipient
+    associations:
+        default: happy
+    saliences:
+        default: 5.0
+    effects:
+        @complimenter.mood += 5
+        @recipient.mood += 10
 
 
 plan befriend:
@@ -100,6 +175,64 @@ plan befriend:
                 with:
                     @greeter: @host
                     @friend: @guest_b
+            succeed;
+
+
+// Mean multi-tick arc. ~5 weeks of brooding + plotting before the strike.
+plan scheme-revenge:
+    roles:
+        @schemer:
+            as: character
+        @target:
+            as: character
+    phases:
+        >stew:
+            wait:
+                timeout: 3 weeks
+            queue action brood:
+                with:
+                    @brooder: @schemer
+                    @about: @target
+            advance;
+        >plot:
+            wait:
+                timeout: 2 weeks
+            queue action plot:
+                with:
+                    @plotter: @schemer
+                    @victim: @target
+            advance;
+        >strike:
+            queue action sabotage:
+                with:
+                    @saboteur: @schemer
+                    @target: @target
+            succeed;
+
+
+// Nice multi-tick arc. Parallel structure to scheme-revenge.
+plan deepen-bond:
+    roles:
+        @self:
+            as: character
+        @other:
+            as: character
+    phases:
+        >reflect:
+            wait:
+                timeout: 2 weeks
+            queue action reflect:
+                with:
+                    @reflector: @self
+                    @about: @other
+            advance;
+        >reach-out:
+            wait:
+                timeout: 1 weeks
+            queue action compliment:
+                with:
+                    @complimenter: @self
+                    @recipient: @other
             succeed;
 
 
