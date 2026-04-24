@@ -6,6 +6,14 @@ import {
     type HostState, type Snapshot, type VivRuntime,
 } from "./viv";
 
+// Minimal view of a role's definition ("as: character" etc.) pulled from the bundle.
+export type PatternMeta = {
+    name: string;
+    roles: Record<string, { as?: string }>;
+};
+
+export type QueryMeta = { name: string };
+
 const TIMESTEP_DELTA = 10;
 
 export type Engine = {
@@ -14,6 +22,8 @@ export type Engine = {
     snapshots: Snapshot[];              // append-only history
     schemaVersion: string;
     sourceCode: string | null;          // optional .viv source, shown read-only
+    patterns: PatternMeta[];            // sifting patterns defined in the bundle
+    queries: QueryMeta[];               // search queries defined in the bundle
     stepOnce: () => Promise<Snapshot>;  // advance one frame, return the new snapshot
     stepMany: (n: number) => Promise<Snapshot[]>;
 };
@@ -69,12 +79,20 @@ export async function createEngine(init: EngineInit): Promise<Engine> {
         return out;
     };
 
+    const bundleAny = init.contentBundle as any;
+    const patterns: PatternMeta[] = Object.entries(bundleAny?.siftingPatterns ?? {})
+        .map(([name, def]: [string, any]) => ({ name, roles: def?.roles ?? {} }));
+    const queries: QueryMeta[] = Object.keys(bundleAny?.queries ?? {})
+        .map((name) => ({ name }));
+
     return {
         runtime,
         live,
         snapshots,
         schemaVersion: runtime.getSchemaVersion(),
         sourceCode: init.sourceCode ?? null,
+        patterns,
+        queries,
         stepOnce,
         stepMany,
     };

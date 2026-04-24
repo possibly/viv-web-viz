@@ -8,6 +8,9 @@
 // timesteps we capture a deep clone of the simulation state after each step; "scrubbing" is
 // read-only replay of those snapshots, not a time-travel of the runtime itself.
 
+// A sifting match is a mapping from action-role names to arrays of action IDs.
+export type SiftingMatch = Record<string, string[]>;
+
 export type VivRuntime = {
     initializeVivRuntime: (args: { contentBundle: unknown; adapter: unknown }) => true;
     vivRuntimeIsInitialized: () => boolean;
@@ -17,6 +20,20 @@ export type VivRuntime = {
         urgent?: boolean;
         precastBindings?: Record<string, string[]>;
         causes?: string[];
+    }) => Promise<string>;
+    runSearchQuery: (args: {
+        queryName: string;
+        searchDomain?: string;
+        precastBindings?: Record<string, string[]>;
+    }) => Promise<string[]>;
+    runSiftingPattern: (args: {
+        patternName: string;
+        searchDomain?: string;
+        precastBindings?: Record<string, string[]>;
+    }) => Promise<SiftingMatch | null>;
+    constructSiftingMatchDiagram: (args: {
+        siftingMatch: SiftingMatch;
+        ansi?: boolean;
     }) => Promise<string>;
     fadeCharacterMemories: () => Promise<void>;
     getDebuggingData: () => Promise<unknown>;

@@ -9,6 +9,7 @@ export const DOCS = {
     characters: { slug: "20-runtime-model", label: "Runtime model · Knowledge Manager", hash: "knowledge-manager" },
     queues:     { slug: "11-reactions",     label: "Reactions" },
     plans:      { slug: "17-plans",         label: "Plans" },
+    sifting:    { slug: "16-sifting-patterns", label: "Sifting patterns" },
     raw:        { slug: "20-runtime-model", label: "Runtime model" },
 } as const;
 

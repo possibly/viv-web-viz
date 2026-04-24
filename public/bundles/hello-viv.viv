@@ -1,13 +1,12 @@
-// Demo content for viv-web-viz. Exercises three subsystems so the explorer's
-// Chronicle / Queues / Plans tabs are all populated:
+// Demo content for viv-web-viz. Exercises six subsystems so every tab of the
+// explorer has something interesting to show:
 //
-//   - `hello` — a plain action characters can select on their own.
-//   - `provoke` — a plain action; when it fires, its `reactions:` block QUEUES
-//     a `retaliate` reserved action on the target. That shows up under Queues,
-//     and gets drained on subsequent ticks.
-//   - `plan befriend` — a two-phase plan queued via the queuePlan API at
-//     engine init. Phase 1 queues a hello to guest_a and advances; phase 2
-//     queues a hello to guest_b and succeeds. Shows plan progression.
+//   - Actions (selectable): hello, provoke, celebrate, argue.
+//   - Reactions: `provoke` queues `retaliate`.
+//   - Plans: `befriend` (two phases queueing hellos).
+//   - Associations: celebrate→happy, argue→sad — feed the queries below.
+//   - Queries: happy-memory, sad-memory — used inside sifting patterns.
+//   - Sifting patterns: good-day, bad-day — find emergent storylines.
 
 action hello:
     gloss: "@greeter says hello to @friend"
@@ -17,8 +16,40 @@ action hello:
         @friend:
             as: recipient
     effects:
-        @greeter.mood += 5
-        @friend.mood += 5
+        @greeter.mood += 3
+        @friend.mood += 3
+
+
+action celebrate:
+    gloss: "@celebrant celebrates with @guest"
+    roles:
+        @celebrant:
+            as: initiator
+        @guest:
+            as: recipient
+    associations:
+        default: happy
+    saliences:
+        default: 5.0
+    effects:
+        @celebrant.mood += 8
+        @guest.mood += 8
+
+
+action argue:
+    gloss: "@instigator argues with @opponent"
+    roles:
+        @instigator:
+            as: initiator
+        @opponent:
+            as: recipient
+    associations:
+        default: sad
+    saliences:
+        default: 5.0
+    effects:
+        @instigator.mood -= 5
+        @opponent.mood -= 5
 
 
 action provoke:
@@ -70,3 +101,35 @@ plan befriend:
                     @greeter: @host
                     @friend: @guest_b
             succeed;
+
+
+query happy-memory:
+    associations:
+        all: happy
+
+
+query sad-memory:
+    associations:
+        all: sad
+
+
+pattern good-day:
+    roles:
+        @protagonist:
+            as: character
+    actions:
+        @event:
+            from:
+                search query happy-memory:
+                    over: @protagonist
+
+
+pattern bad-day:
+    roles:
+        @protagonist:
+            as: character
+    actions:
+        @event:
+            from:
+                search query sad-memory:
+                    over: @protagonist

@@ -9,6 +9,7 @@ import { QueuesView } from "./components/QueuesView";
 import { PlansView } from "./components/PlansView";
 import { RawView } from "./components/RawView";
 import { SourceView } from "./components/SourceView";
+import { SiftingView } from "./components/SiftingView";
 
 // Use Vite's BASE_URL so the fetch works under both `/` (dev, root deploy) and
 // `/viv-web-viz/` (GitHub Pages subpath deploy).
@@ -112,7 +113,7 @@ export function App() {
     }, [historyLen]);
 
     const counts = useMemo(() => {
-        if (!snapshot) return { chronicle: 0, characters: 0, queues: 0, plans: 0 };
+        if (!snapshot) return { chronicle: 0, characters: 0, queues: 0, plans: 0, sifting: 0 };
         const s = snapshot.state;
         const internal = s.vivInternalState as any;
         const actionQueues: Record<string, any[]> = internal?.actionQueues ?? {};
@@ -129,14 +130,16 @@ export function App() {
             characters: s.characters.length,
             queues: queueSize,
             plans: planSize,
+            sifting: (engine?.patterns.length ?? 0) + (engine?.queries.length ?? 0),
         };
-    }, [snapshot]);
+    }, [snapshot, engine]);
 
     const currentTabLabel =
         tab === "chronicle" ? "Chronicle"
         : tab === "characters" ? "Characters"
         : tab === "queues" ? "Queues"
         : tab === "plans" ? "Plans"
+        : tab === "sifting" ? "Sifting"
         : tab === "source" ? "Source" : "Raw State";
 
     return (
@@ -215,6 +218,7 @@ export function App() {
                                 }}
                                 counts={counts}
                                 hasSource={!!engine?.sourceCode}
+                                hasSifting={!!engine && (engine.patterns.length + engine.queries.length > 0)}
                             />
                         </>
                     ) : null}
@@ -229,6 +233,8 @@ export function App() {
                             <QueuesView snapshot={snapshot} />
                         ) : tab === "plans" ? (
                             <PlansView snapshot={snapshot} />
+                        ) : tab === "sifting" ? (
+                            engine ? <SiftingView engine={engine} snapshot={snapshot} /> : null
                         ) : tab === "source" ? (
                             <SourceView source={engine?.sourceCode ?? null} />
                         ) : (
