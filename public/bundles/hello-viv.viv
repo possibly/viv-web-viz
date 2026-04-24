@@ -1,0 +1,72 @@
+// Demo content for viv-web-viz. Exercises three subsystems so the explorer's
+// Chronicle / Queues / Plans tabs are all populated:
+//
+//   - `hello` — a plain action characters can select on their own.
+//   - `provoke` — a plain action; when it fires, its `reactions:` block QUEUES
+//     a `retaliate` reserved action on the target. That shows up under Queues,
+//     and gets drained on subsequent ticks.
+//   - `plan befriend` — a two-phase plan queued via the queuePlan API at
+//     engine init. Phase 1 queues a hello to guest_a and advances; phase 2
+//     queues a hello to guest_b and succeeds. Shows plan progression.
+
+action hello:
+    gloss: "@greeter says hello to @friend"
+    roles:
+        @greeter:
+            as: initiator
+        @friend:
+            as: recipient
+    effects:
+        @greeter.mood += 5
+        @friend.mood += 5
+
+
+action provoke:
+    gloss: "@provoker provokes @target"
+    roles:
+        @provoker:
+            as: initiator
+        @target:
+            as: recipient
+    effects:
+        @provoker.mood -= 3
+        @target.mood -= 8
+    reactions:
+        queue action retaliate:
+            with:
+                @aggressor: @target
+                @victim: @provoker
+
+
+reserved action retaliate:
+    gloss: "@aggressor retaliates against @victim"
+    roles:
+        @aggressor:
+            as: initiator
+        @victim:
+            as: recipient
+    effects:
+        @victim.mood -= 10
+
+
+plan befriend:
+    roles:
+        @host:
+            as: character
+        @guest_a:
+            as: character
+        @guest_b:
+            as: character
+    phases:
+        >first:
+            queue action hello:
+                with:
+                    @greeter: @host
+                    @friend: @guest_a
+            advance;
+        >second:
+            queue action hello:
+                with:
+                    @greeter: @host
+                    @friend: @guest_b
+            succeed;
