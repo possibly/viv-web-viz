@@ -35,6 +35,7 @@ export type VivRuntime = {
         siftingMatch: SiftingMatch;
         ansi?: boolean;
     }) => Promise<string>;
+    tickPlanner: () => Promise<void>;
     fadeCharacterMemories: () => Promise<void>;
     getDebuggingData: () => Promise<unknown>;
     getSchemaVersion: () => string;
@@ -149,6 +150,14 @@ export function makeAdapter(state: HostState, EntityType: VivRuntime["EntityType
         saveItemInscriptions: (itemID: string, inscriptions: unknown) => {
             (state.entities[itemID] as any).inscriptions = inscriptions;
         },
+        // Aggressive decay config so memory salience visibly falls across ~5 ticks
+        // (= 5 weeks of story time). Defaults are tuned for monthly timescales,
+        // which is invisible at our per-week tick cadence.
+        config: {
+            memoryRetentionMonthlyMultiplier: 0.15,
+            memoryForgettingSalienceThreshold: 0.5,
+            memoryMaxSalience: 10,
+        },
         debug: { validateAPICalls: true, watchlists: {} },
     };
 }
@@ -177,14 +186,80 @@ export function seedDemoWorld(state: HostState, EntityType: VivRuntime["EntityTy
 
 // Snapshot capture/restore ---------------------------------------------------
 
+// Per-character record of selectAction's outcome during a step.
+export type CharSelection = {
+    characterID: string;
+    characterName: string;
+    // "from-queue": the character had an action already queued on their
+    //   actionQueue (from a plan phase or a reaction) and selectAction
+    //   dispatched it. "free-pick": no queued action — the runtime's action
+    //   selector chose an action freshly. "none": no action produced at all.
+    source: "from-queue" | "free-pick" | "none";
+    actionID: string | null;   // UID of the action produced, if any
+    gloss: string | null;      // gloss/report for quick display
+};
+
+// Snapshot of a live plan just after tickPlanner has run: name and current phase,
+// for display in the step digest. Lets users see "scheme-revenge now in >plot".
+export type ActivePlanSummary = { id: string; name: string; phase: string };
+
+export type StepDigest = {
+    // tickPlanner phase
+    plansActiveBefore: number;
+    plansActiveAfter: number;
+    plansQueuedBefore: number;
+    plansQueuedAfter: number;
+    activePlansAfter: ActivePlanSummary[];  // plans still in flight after the tick
+    // selectAction phase
+    selections: CharSelection[];
+    // derived totals
+    plansLaunched: number;     // plansQueuedBefore - plansQueuedAfter, clamped ≥ 0
+    plansResolved: number;     // plansActiveBefore ↦ gone from activePlans (approximation)
+    fromQueueCount: number;
+    freePickCount: number;
+    newActionCount: number;
+};
+
+// Monotonically growing list of plans we've ever observed by this frame.
+// Held separately from state so the UI can surface resolved plans that the
+// runtime has already removed from its live planQueue/activePlans maps.
+export type SnapshotPlanRosterEntry = {
+    id: string;
+    name: string;
+    precastBindings: Record<string, string[]>;
+    firstSeenFrame: number;
+};
+
+// Same idea for queued reactions (per-character action queues): we need to
+// remember the action name and bindings so the "Recently resolved" list can
+// label them after they've been drained.
+export type SnapshotReactionRosterEntry = {
+    id: string;
+    name: string;
+    initiatorID: string;
+    initiatorName: string;
+    precastBindings: Record<string, string[]>;
+    firstSeenFrame: number;
+};
+
 export type Snapshot = {
     frame: number;            // 0-indexed step count
     timestamp: number;        // story-time timestamp at the END of this frame
     state: HostState;         // deep clone, immutable from the UI's perspective
     newActionIDs: string[];   // actions produced during this step
+    digest: StepDigest | null; // what happened during the step that produced this frame (null on frame 0)
+    planRoster: SnapshotPlanRosterEntry[]; // every plan ever observed up to this frame
+    reactionRoster: SnapshotReactionRosterEntry[]; // every reaction-queued action ever observed
 };
 
-export function snapshotHostState(state: HostState, frame: number, prevActions: string[]): Snapshot {
+export function snapshotHostState(
+    state: HostState,
+    frame: number,
+    prevActions: string[],
+    digest: StepDigest | null,
+    planRoster: SnapshotPlanRosterEntry[],
+    reactionRoster: SnapshotReactionRosterEntry[],
+): Snapshot {
     const cloned: HostState = structuredClone(state);
     const prevSet = new Set(prevActions);
     const newActionIDs = cloned.actions.filter((id) => !prevSet.has(id));
@@ -193,5 +268,8 @@ export function snapshotHostState(state: HostState, frame: number, prevActions: 
         timestamp: cloned.timestamp,
         state: cloned,
         newActionIDs,
+        digest,
+        planRoster: planRoster.slice(),
+        reactionRoster: reactionRoster.slice(),
     };
 }

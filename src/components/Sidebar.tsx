@@ -1,17 +1,17 @@
-export type TabKey = "chronicle" | "characters" | "queues" | "plans" | "sifting" | "source" | "raw";
+export type TabKey = "chronicle" | "characters" | "reactions" | "plans" | "sifting" | "source" | "raw";
 
 type Props = {
     tab: TabKey;
     setTab: (t: TabKey) => void;
-    counts: { chronicle: number; characters: number; queues: number; plans: number; sifting: number };
+    counts: { chronicle: number; characters: number; reactions: number; plans: number; sifting: number };
     hasSource: boolean;
     hasSifting: boolean;
 };
 
-const ALL_TABS: { key: TabKey; label: string; countKey?: "chronicle" | "characters" | "queues" | "plans" | "sifting" }[] = [
+const ALL_TABS: { key: TabKey; label: string; countKey?: "chronicle" | "characters" | "reactions" | "plans" | "sifting" }[] = [
     { key: "chronicle", label: "Chronicle", countKey: "chronicle" },
     { key: "characters", label: "Characters", countKey: "characters" },
-    { key: "queues", label: "Queues", countKey: "queues" },
+    { key: "reactions", label: "Reactions", countKey: "reactions" },
     { key: "plans", label: "Plans", countKey: "plans" },
     { key: "sifting", label: "Sifting", countKey: "sifting" },
     { key: "source", label: "Source" },

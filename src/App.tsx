@@ -5,11 +5,12 @@ import { Controls } from "./components/Controls";
 import { Sidebar, type TabKey } from "./components/Sidebar";
 import { ChronicleView } from "./components/ChronicleView";
 import { CharactersView } from "./components/CharactersView";
-import { QueuesView } from "./components/QueuesView";
+import { ReactionsView } from "./components/ReactionsView";
 import { PlansView } from "./components/PlansView";
 import { RawView } from "./components/RawView";
 import { SourceView } from "./components/SourceView";
 import { SiftingView } from "./components/SiftingView";
+import { StepDigestStrip } from "./components/StepDigestStrip";
 
 // Use Vite's BASE_URL so the fetch works under both `/` (dev, root deploy) and
 // `/viv-web-viz/` (GitHub Pages subpath deploy).
@@ -122,22 +123,20 @@ export function App() {
     }, [historyLen]);
 
     const counts = useMemo(() => {
-        if (!snapshot) return { chronicle: 0, characters: 0, queues: 0, plans: 0, sifting: 0 };
+        if (!snapshot) return { chronicle: 0, characters: 0, reactions: 0, plans: 0, sifting: 0 };
         const s = snapshot.state;
         const internal = s.vivInternalState as any;
         const actionQueues: Record<string, any[]> = internal?.actionQueues ?? {};
         const planQueue: any[] = internal?.planQueue ?? [];
         const activePlans: Record<string, any> = internal?.activePlans ?? {};
         const statuses: Record<string, string> = internal?.queuedConstructStatuses ?? {};
-        const queueSize =
-            Object.values(actionQueues).reduce((n, q) => n + (q?.length ?? 0), 0) +
-            planQueue.filter((p) => (statuses[p?.id] ?? "pending") === "pending").length;
+        const reactionSize = Object.values(actionQueues).reduce((n, q) => n + (q?.length ?? 0), 0);
         const planSize = Object.keys(activePlans).length +
             planQueue.filter((p) => (statuses[p?.id] ?? "pending") === "pending").length;
         return {
             chronicle: s.actions.length,
             characters: s.characters.length,
-            queues: queueSize,
+            reactions: reactionSize,
             plans: planSize,
             sifting: (engine?.patterns.length ?? 0) + (engine?.queries.length ?? 0),
         };
@@ -146,7 +145,7 @@ export function App() {
     const currentTabLabel =
         tab === "chronicle" ? "Chronicle"
         : tab === "characters" ? "Characters"
-        : tab === "queues" ? "Queues"
+        : tab === "reactions" ? "Reactions"
         : tab === "plans" ? "Plans"
         : tab === "sifting" ? "Sifting"
         : tab === "source" ? "Source" : "Raw State";
@@ -239,20 +238,25 @@ export function App() {
                     <div className="content">
                         {!snapshot ? (
                             <div className="empty">no snapshot yet</div>
-                        ) : tab === "chronicle" ? (
-                            <ChronicleView snapshot={snapshot} />
-                        ) : tab === "characters" ? (
-                            <CharactersView snapshot={snapshot} />
-                        ) : tab === "queues" ? (
-                            <QueuesView snapshot={snapshot} />
-                        ) : tab === "plans" ? (
-                            <PlansView snapshot={snapshot} />
-                        ) : tab === "sifting" ? (
-                            engine ? <SiftingView engine={engine} snapshot={snapshot} /> : null
-                        ) : tab === "source" ? (
-                            <SourceView source={engine?.sourceCode ?? null} />
                         ) : (
-                            <RawView snapshot={snapshot} />
+                            <>
+                                <StepDigestStrip snapshot={snapshot} />
+                                {tab === "chronicle" ? (
+                                    <ChronicleView snapshot={snapshot} />
+                                ) : tab === "characters" ? (
+                                    <CharactersView snapshot={snapshot} />
+                                ) : tab === "reactions" ? (
+                                    <ReactionsView snapshot={snapshot} />
+                                ) : tab === "plans" ? (
+                                    <PlansView snapshot={snapshot} />
+                                ) : tab === "sifting" ? (
+                                    engine ? <SiftingView engine={engine} snapshot={snapshot} /> : null
+                                ) : tab === "source" ? (
+                                    <SourceView source={engine?.sourceCode ?? null} />
+                                ) : (
+                                    <RawView snapshot={snapshot} />
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -156,7 +156,7 @@ async function main() {
     console.log("frame 0 empty:", emptyAtZero);
 
     // 6. Visit each tab, confirm no render crash (content area has content).
-    const tabs = ["Chronicle", "Characters", "Queues", "Plans", "Raw State"];
+    const tabs = ["Chronicle", "Characters", "Reactions", "Plans", "Raw State"];
     for (const name of tabs) {
         await browser.send("Runtime.evaluate", {
             expression: `(() => {

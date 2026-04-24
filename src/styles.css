@@ -130,6 +130,28 @@ input[type="range"] { flex: 1; min-width: 10rem; }
     height: 100%;
     transition: width 120ms ease-out;
 }
+
+.step-strip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+.step-strip-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+.step-api {
+    color: var(--accent-2);
+    font-weight: 600;
+    min-width: 12rem;
+}
+.step-arrow { color: var(--muted); }
 .salience-num {
     font-size: 0.78rem;
     min-width: 6.5ch;
@@ -150,6 +172,14 @@ input[type="range"] { flex: 1; min-width: 10rem; }
 }
 .sift-name { flex: 1; min-width: 8rem; }
 .sift-row select { min-width: 10rem; }
+
+.chronicle-filter {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
 
 .back-btn {
     background: var(--panel-2);
