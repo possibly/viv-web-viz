@@ -77,16 +77,16 @@ shape — or edit `src/lib/viv.ts#seedDemoWorld` to fit your own.
 
 ### Viv source files (optional)
 
-If a bundle has a companion `.viv` source file, it's picked up automatically and
-shown read-only on the **Source** tab with syntax highlighting. There is **no
-UI for uploading source**; it's a static-file convention:
+If a bundle has a companion `.viv` source file, it's picked up automatically
+and shown read-only on the **Source** tab with syntax highlighting. Two ways
+to provide it:
 
-- **Default bundle:** drop both `bundle.json` and `bundle.viv` into
-  `public/bundles/` with matching stems. The app fetches `hello-viv.viv`
-  alongside `hello-viv.json`.
-- **User-uploaded bundle:** source display isn't wired up for ad-hoc uploads
-  (which only provide the JSON). The Source tab disappears for bundles with no
-  known companion `.viv`.
+- **Static:** drop both `bundle.json` and `bundle.viv` into `public/bundles/`
+  with any matching stems. The default bundle does this — `hello-viv.json` +
+  `hello-viv.viv`.
+- **Upload:** the **Load bundle…** picker accepts multiple files. Select
+  exactly one `.json` (required) and optionally one `.viv` (shown read-only).
+  Without a `.viv`, the Source tab is hidden for that session.
 
 If you edit a `.viv` file, recompile it to regenerate the JSON:
 

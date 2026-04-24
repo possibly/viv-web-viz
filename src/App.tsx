@@ -52,11 +52,11 @@ export function App() {
         }
     }, []);
 
-    const loadBundleAndInit = useCallback(async (bundle: unknown) => {
+    const loadBundleAndInit = useCallback(async (bundle: unknown, sourceCode: string | null = null) => {
         setError(null);
         setBusy(true);
         try {
-            const eng = await createEngine({ contentBundle: bundle });
+            const eng = await createEngine({ contentBundle: bundle, sourceCode });
             setEngine(eng);
             setHistoryLen(eng.snapshots.length);
             setFrame(0);
@@ -89,11 +89,20 @@ export function App() {
         }
     }, [engine, busy]);
 
-    const onUploadBundle = useCallback(async (file: File) => {
+    // Accepts one or more files: exactly one .json (the compiled content bundle)
+    // and optionally one .viv (its source, shown read-only on the Source tab).
+    const onUploadFiles = useCallback(async (files: FileList | File[]) => {
         try {
-            const text = await file.text();
-            const bundle = JSON.parse(text);
-            await loadBundleAndInit(bundle);
+            const arr = Array.from(files);
+            const jsonFile = arr.find((f) => /\.json$/i.test(f.name));
+            const vivFile = arr.find((f) => /\.viv$/i.test(f.name));
+            if (!jsonFile) {
+                setError("Please include a .json content bundle. You may optionally include a .viv source file alongside it.");
+                return;
+            }
+            const bundle = JSON.parse(await jsonFile.text());
+            const sourceCode = vivFile ? await vivFile.text() : null;
+            await loadBundleAndInit(bundle, sourceCode);
         } catch (e: any) {
             setError(e?.stack || String(e));
         }
@@ -176,13 +185,18 @@ export function App() {
                         <button onClick={() => loadDefaultBundle()} disabled={busy}>
                             Reload hello-viv demo
                         </button>
-                        <label className="meta" style={{ cursor: "pointer" }}>
+                        <label className="meta" style={{ cursor: "pointer" }} title="Pick one .json and optionally one .viv">
                             Load bundle…
                             <input
                                 type="file"
-                                accept="application/json,.json"
+                                accept=".json,.viv,application/json"
+                                multiple
                                 style={{ display: "none" }}
-                                onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadBundle(f); }}
+                                onChange={(e) => {
+                                    const files = e.target.files;
+                                    if (files && files.length > 0) onUploadFiles(files);
+                                    e.target.value = ""; // allow re-selecting the same files
+                                }}
                             />
                         </label>
                         <span className="meta"><span className="kbd">←</span> <span className="kbd">→</span> scrub</span>
