@@ -93,28 +93,3 @@ If you edit a `.viv` file, recompile it to regenerate the JSON:
 ```sh
 vivc -i public/bundles/hello-viv.viv -o public/bundles/hello-viv.json
 ```
-
-## Deploy
-
-Pushes to `main` trigger `.github/workflows/deploy.yml`, which builds with
-`VITE_BASE=/viv-web-viz/` and publishes to GitHub Pages.
-
-## CDP smoke tests
-
-`scripts/cdp-smoke.mjs` and `scripts/cdp-sifting.mjs` drive a headless Chrome
-via the Chrome DevTools Protocol to assert the app loads, stepping produces
-actions, scrubbing restores frame 0, every tab renders, and the Sifting tab
-enumerates its patterns/queries. Run them against a live dev server:
-
-```sh
-npm run dev &
-node scripts/cdp-smoke.mjs
-node scripts/cdp-sifting.mjs
-```
-
-## Caveat: replay, not time-travel
-
-Scrubbing back shows a historical snapshot but does *not* rewind the runtime
-singleton. Stepping always continues from the live head, not the frame you're
-viewing. True time-travel would require re-initializing the runtime from a
-stored `vivInternalState` on every scrub — not implemented.
